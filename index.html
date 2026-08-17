@@ -118,12 +118,24 @@ function newId(){
   return t + "-" + r;
 }
 
-/* ---------- url params (Prolific) ---------- */
-var qp = new URLSearchParams(location.search);
-S.meta.pid        = qp.get("PROLIFIC_PID") || "";
-S.meta.study_id   = qp.get("STUDY_ID") || "";
-S.meta.session_id = qp.get("SESSION_ID") || "";
-S.meta.started_at = new Date().toISOString();
+/* ---------- url params (Prolific) ----------
+   Must be re-applied AFTER load(), because load() replaces the whole state
+   object with the stored copy. A participant who opened the link once without
+   finishing, then came back through a fresh Prolific link, would otherwise
+   carry the old (empty) Prolific ID for the rest of the session. */
+function applyUrlParams(){
+  var qp = new URLSearchParams(location.search);
+  var pid = qp.get("PROLIFIC_PID"), sid = qp.get("STUDY_ID"), ses = qp.get("SESSION_ID");
+  if(!S.meta) S.meta = {};
+  if(pid) S.meta.pid = pid;
+  if(sid) S.meta.study_id = sid;
+  if(ses) S.meta.session_id = ses;
+  if(S.meta.pid        === undefined) S.meta.pid = "";
+  if(S.meta.study_id   === undefined) S.meta.study_id = "";
+  if(S.meta.session_id === undefined) S.meta.session_id = "";
+  if(!S.meta.started_at) S.meta.started_at = new Date().toISOString();
+}
+applyUrlParams();
 
 /* ---------- persistence ---------- */
 function save(){ try{ localStorage.setItem(LS, JSON.stringify(S)); }catch(e){} }
@@ -523,7 +535,10 @@ function localAssign(){
 }
 
 /* ---------- boot ---------- */
-if(load() && S.pages){
+var resumed = load();
+applyUrlParams();          /* re-apply after the stored state was restored */
+if(resumed && S.pages){
+  save();
   render();
 } else {
   if(!S.token) S.token = newId();
