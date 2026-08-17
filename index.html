@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Restaurant Recommendation Study</title>
+<style>
+:root{--fg:#1c1c1e;--mut:#6b7280;--line:#d8dce2;--accent:#8b2f2f;--bg:#fff;--soft:#f6f7f9}
+*{box-sizing:border-box}
+body{margin:0;background:var(--soft);color:var(--fg);
+ font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}
+#bar{position:fixed;top:0;left:0;right:0;height:4px;background:#e5e7eb;z-index:10}
+#barfill{height:100%;width:0;background:var(--accent);transition:width .25s}
+#wrap{max-width:760px;margin:0 auto;padding:36px 20px 80px}
+.card{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:28px 30px}
+h1{font-size:22px;margin:0 0 18px}
+h2{font-size:18px;margin:0 0 14px;letter-spacing:.01em}
+p{margin:0 0 14px}
+hr{border:0;border-top:1px solid var(--line);margin:20px 0}
+img.stim{display:block;width:360px;max-width:100%;height:auto;margin:18px auto;
+ border:1px solid var(--line);border-radius:8px}
+.reset{background:#eef2f7;border-left:4px solid #55606e;padding:12px 14px;margin:0 0 18px;
+ border-radius:4px;font-size:15px;font-style:italic;color:#414a56}
+/* item 2: instructions italic, scenario one step larger */
+.instr{font-style:italic;color:#5a6472;font-size:15px;margin:0 0 18px}
+.scenario{font-size:18px;line-height:1.65;margin:0 0 16px}
+.leadin{font-style:italic;color:#5a6472;font-size:15px;margin:26px 0 10px}
+.manip{font-size:18px;line-height:1.65;font-weight:700;margin:0 0 16px}
+/* item 12: stem is not bold; statements carry the weight */
+.stem{font-weight:400;color:#4a535f;font-size:15px;margin:0 0 20px;text-align:left}
+/* item 8: fixed layout so the seven columns are always equal, whatever the
+   label lengths ("Neither disagree nor agree" is much wider than "Agree"). */
+table.grid{width:100%;border-collapse:collapse;margin:0 0 6px;table-layout:fixed}
+table.grid col.opt{width:8.57%}
+table.grid th{font-size:12px;font-weight:500;color:var(--mut);padding:0 4px 10px;
+ text-align:center;vertical-align:bottom;line-height:1.25}
+table.grid td{padding:11px 4px;border-top:1px solid var(--line);text-align:center}
+/* item 12 & 13: statement text larger and left aligned */
+table.grid td.itxt{text-align:left;width:40%;padding-right:16px;font-size:17px;line-height:1.45}
+.manch{display:none}
+
+/* item 8 & 14: bipolar rows put the anchors outside the radio track, so the
+   seven points are always evenly spaced no matter how long the labels are. */
+.bip{margin:0 0 6px}
+.bip-row{display:flex;align-items:center;gap:12px;padding:14px 0;border-top:1px solid var(--line)}
+.bip-row:last-child{border-bottom:1px solid var(--line)}
+.bip-lab{flex:0 0 132px;font-size:14px;color:#414a56;line-height:1.3}
+.bip-lab.hi{text-align:right}
+.bip-scale{flex:1 1 auto;display:flex;justify-content:space-between;align-items:center}
+.bip-scale label{display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;
+ flex:1 1 0;min-width:0}
+.bip-scale .num{font-size:12px;color:#9aa1ab}
+.bip-row.miss{background:#fdf2f2}
+.bip-item{font-size:17px;line-height:1.45;margin:18px 0 2px;text-align:left}
+.bip-row.labelled{border-top:0;padding-top:2px}
+.bip-row.labelled+.bip-item{border-top:1px solid var(--line);padding-top:16px}
+table.grid tr.miss td{background:#fdf2f2}
+input[type=radio]{width:19px;height:19px;accent-color:var(--accent);cursor:pointer}
+ul.opts{list-style:none;margin:0;padding:0}
+ul.opts li{border-top:1px solid var(--line)}
+ul.opts li:last-child{border-bottom:1px solid var(--line)}
+ul.opts label{display:flex;gap:12px;align-items:flex-start;padding:13px 4px;cursor:pointer}
+ul.opts.horiz{display:flex;gap:10px;flex-wrap:wrap}
+ul.opts.horiz li{border:1px solid var(--line);border-radius:8px}
+ul.opts.horiz label{padding:10px 14px}
+nav{margin-top:26px;display:flex;justify-content:flex-end;align-items:center;gap:16px}
+button{background:var(--accent);color:#fff;border:0;border-radius:8px;padding:12px 30px;
+ font-size:16px;cursor:pointer}
+button:hover{filter:brightness(1.08)}
+.warn{color:#b00;font-size:14px;margin-right:auto;display:none}
+.warn.on{display:block}
+.note{color:var(--mut);font-size:14px}
+.center{text-align:center;padding:40px 0}
+@media(max-width:640px){
+ #wrap{padding:24px 12px 60px}.card{padding:20px 16px}
+ table.grid td.itxt{width:100%;display:block;border-top:1px solid var(--line);padding:12px 0 4px;font-weight:500;font-size:16px}
+ .scenario,.manip{font-size:17px}
+ .bip-row{flex-wrap:wrap;gap:4px}
+ .bip-lab{flex:0 0 auto;font-size:13px;color:#6b7280}
+ .bip-lab.hi{margin-left:auto}
+ .bip-scale{flex:1 0 100%;order:3;margin-top:4px}
+ table.grid thead{display:none}
+ table.grid tr{display:block;padding-bottom:8px}
+ table.grid td:not(.itxt){display:inline-block;width:13.5%;border-top:0;padding:6px 0}
+ table.grid td:not(.itxt)::after{content:attr(data-n);display:block;font-size:11px;color:var(--mut)}
+ .manch{display:flex;justify-content:space-between;gap:10px;margin:6px 0 2px;
+  font-size:12px;font-weight:400;color:var(--mut);line-height:1.3}
+ .manch span:last-child{text-align:right}
+}
+</style>
+</head>
+<body>
+<div id="bar"><div id="barfill"></div></div>
+<div id="wrap"><div class="card" id="card"></div></div>
+
+<script src="content.js"></script>
+<script>
+/* ==================== CONFIGURATION ====================
+   Fill these three in before launching.                    */
+var CONFIG = {
+  ENDPOINT:      "https://script.google.com/macros/s/AKfycbxRWiWI5xYVdCnX_U4G8J3oEWzRY_hJ813QWScKwHGM2x6zFIBV3lgBLSda5JsQjkkW/exec",
+  COMPLETION_URL:"PASTE_PROLIFIC_COMPLETION_URL_HERE",
+  SCREENOUT_URL: "PASTE_PROLIFIC_SCREENOUT_URL_HERE"
+};
+/* ======================================================= */
+
+var LS = "aisugg_pretest_v1";
+var S = {answers:{}, meta:{}, idx:0, pages:null, token:null, assignment:null, times:{}};
+
+/* A record id is created the moment the page opens, before anything else.
+   Every visitor therefore appears in the log — including people who decline
+   consent, fail screening, or close the tab immediately. Prolific IDs cannot
+   be recovered afterwards, so capture has to happen at the very first moment. */
+function newId(){
+  var t = new Date().toISOString().replace(/[-:.TZ]/g,"").slice(0,14);
+  var r = "xxxxxxxx".replace(/x/g, function(){ return "0123456789abcdef"[Math.floor(Math.random()*16)]; });
+  return t + "-" + r;
+}
+
+/* ---------- url params (Prolific) ---------- */
+var qp = new URLSearchParams(location.search);
+S.meta.pid        = qp.get("PROLIFIC_PID") || "";
+S.meta.study_id   = qp.get("STUDY_ID") || "";
+S.meta.session_id = qp.get("SESSION_ID") || "";
+S.meta.started_at = new Date().toISOString();
+
+/* ---------- persistence ---------- */
+function save(){ try{ localStorage.setItem(LS, JSON.stringify(S)); }catch(e){} }
+function load(){
+  try{
+    var r = localStorage.getItem(LS);
+    if(!r) return false;
+    var o = JSON.parse(r);
+    if(!o || !o.token) return false;
+    S = o; return true;
+  }catch(e){ return false; }
+}
+
+/* ---------- server ---------- */
+function postOnce(payload){
+  return fetch(CONFIG.ENDPOINT, {
+    method:"POST", mode:"cors", redirect:"follow",
+    headers:{"Content-Type":"text/plain;charset=utf-8"},
+    body:JSON.stringify(payload)
+  }).then(function(r){
+    if(!r.ok) throw new Error("http "+r.status);
+    return r.json();
+  });
+}
+
+/* Retries with exponential back-off. A transient network blip or an Apps
+   Script hiccup must never cost a paid response. */
+function post(payload, tries, waits){
+  tries = tries || 4;
+  waits = waits || [1000, 3000, 7000, 15000];
+  var attempt = 0;
+  function go(){
+    attempt++;
+    return postOnce(payload).catch(function(err){
+      if(attempt >= tries) throw err;
+      return new Promise(function(res){ setTimeout(res, waits[attempt-1] || 15000); }).then(go);
+    });
+  }
+  return go();
+}
+
+/* last-ditch flush that survives the tab being closed */
+function beacon(payload){
+  try{
+    if(navigator.sendBeacon){
+      var b = new Blob([JSON.stringify(payload)], {type:"text/plain;charset=utf-8"});
+      return navigator.sendBeacon(CONFIG.ENDPOINT, b);
+    }
+  }catch(e){}
+  return false;
+}
+
+function flush(complete, status){
+  var d = {};
+  Object.keys(S.meta).forEach(function(k){ d[k]=S.meta[k]; });
+  Object.keys(S.answers).forEach(function(k){ d[k]=S.answers[k]; });
+  Object.keys(S.times).forEach(function(k){ d["t_"+k]=S.times[k]; });
+  if(S.assignment){
+    d.order=S.assignment.order; d.p1_cond=S.assignment.p1;
+    d.p2_pair=S.assignment.p2pair; d.p2_order=S.assignment.p2order;
+    d.p3_pair=S.assignment.p3pair; d.p3_order=S.assignment.p3order;
+  }
+  S.seq = (S.seq || 0) + 1;
+  var payload = {action: complete?"complete":"save", token:S.token,
+                 status:status, seq:S.seq, data:d};
+  if(complete) return post(payload, 8, [1000,2000,4000,8000,15000,20000,20000,20000]);
+  return post(payload);
+}
+
+function flushPayload(complete, status){
+  var d = {};
+  Object.keys(S.meta).forEach(function(k){ d[k]=S.meta[k]; });
+  Object.keys(S.answers).forEach(function(k){ d[k]=S.answers[k]; });
+  Object.keys(S.times).forEach(function(k){ d["t_"+k]=S.times[k]; });
+  if(S.assignment){
+    d.order=S.assignment.order; d.p1_cond=S.assignment.p1;
+    d.p2_pair=S.assignment.p2pair; d.p2_order=S.assignment.p2order;
+    d.p3_pair=S.assignment.p3pair; d.p3_order=S.assignment.p3order;
+  }
+  return {action: complete?"complete":"save", token:S.token,
+          status:status, seq:(S.seq||0)+1, data:d};
+}
+
+/* ---------- page construction ---------- */
+function splitPair(p, ord){
+  var a = p.split("+");
+  return ord === "BA" ? [a[1],a[0]] : [a[0],a[1]];
+}
+
+function buildPages(A){
+  var pg = [];
+  /* item 11: the manipulation checks are asked while Stage 1 is still true,
+     before the participant has settled on a restaurant. */
+  var partP1 = function(){
+    var c = A.p1;
+    pg.push({t:"html", html:P1_INTRO_HTML});
+    pg.push({t:"html", html:P1_STIM[c]});
+    p1Stage1Questions(c).forEach(function(q){ pg.push({t:"q", q:q}); });
+    pg.push({t:"html", html:P1_STAGE2_HTML});
+    p1Stage2Questions(c).forEach(function(q){ pg.push({t:"q", q:q}); });
+  };
+  /* item 15: scenario -> occasion -> booking bridge -> remaining measures */
+  var partP2 = function(){
+    splitPair(A.p2pair, A.p2order).forEach(function(c){
+      pg.push({t:"html", html:RESET+INSTR+'<p class="scenario">'+P2_TEXT[c]+"</p>"});
+      pg.push({t:"q", q:p2OccasionQuestion(c)});
+      pg.push({t:"html", html:P2_BRIDGE_HTML});
+      p2AfterBridgeQuestions(c).forEach(function(q){ pg.push({t:"q", q:q}); });
+    });
+  };
+  /* item 17: lead-in line, spacing, manipulation text in bold */
+  var partP3 = function(){
+    splitPair(A.p3pair, A.p3order).forEach(function(c){
+      pg.push({t:"html", html:RESET+INSTR+P3_LEAD+P3_LEADIN+
+                (P3_TEXT[c].plain
+                  ? '<p class="scenario">'+P3_TEXT[c].plain+" <strong>"+P3_TEXT[c].bold+"</strong></p>"
+                  : '<p class="manip">'+P3_TEXT[c].bold+"</p>")});
+      p3Questions(c).forEach(function(q){ pg.push({t:"q", q:q}); });
+    });
+  };
+  var map = {P1:partP1, P2:partP2, P3:partP3};
+  A.order.match(/P[123]/g).forEach(function(p){ map[p](); });
+
+  pg.push({t:"q", q:CHECK_QUESTION});
+  pg.push({t:"q", optional:true,
+    q:{id:"DEM_GENDER", type:"radio", stem:"What is your gender?", options:["Male","Female"]}});
+  pg.push({t:"q", optional:true, q:{id:"DEM_INCOME", type:"radio",
+    stem:"What was your total household income before taxes during the past 12 months?",
+    options:["Less than $25,000","$25,000 to $49,999","$50,000 to $74,999",
+             "$75,000 to $99,999","$100,000 or more"]}});
+  return pg;
+}
+
+/* ---------- rendering ---------- */
+var card = document.getElementById("card");
+var pageEnter = Date.now();
+
+function esc(s){ return s; }
+
+function renderQuestion(q, optional, intro){
+  var h = intro || "";
+  h += '<div class="stem">'+q.stem+"</div>";
+  if(q.type === "bipolar"){
+    h += '<div class="bip">';
+    q.rows.forEach(function(r, ii){
+      if(r.lab) h += '<div class="bip-item">'+r.lab+'</div>';
+      h += '<div class="bip-row'+(r.lab?" labelled":"")+'" data-row="'+ii+'">'+
+           '<div class="bip-lab lo">'+r.lo+'</div><div class="bip-scale">';
+      for(var v=1; v<=7; v++)
+        h += "<label><input type='radio' name='"+q.id+"_"+(ii+1)+"' value='"+v+"'>"+
+             '<span class="num">'+v+"</span></label>";
+      h += '</div><div class="bip-lab hi">'+r.hi+"</div></div>";
+    });
+    h += "</div>";
+  } else if(q.type === "grid"){
+    var strip = function(s){ return String(s||"").replace(/<br>/g," ").trim(); };
+    var lo = strip(q.labels[0]), hi = strip(q.labels[6]);
+    h += '<table class="grid"><colgroup><col style="width:40%"><col class="opt">'+
+         '<col class="opt"><col class="opt"><col class="opt"><col class="opt">'+
+         '<col class="opt"><col class="opt"></colgroup><thead><tr><th></th>';
+    q.labels.forEach(function(l,i){ h += "<th>"+(l||"")+"<br><span style='color:#9aa1ab'>"+(i+1)+"</span></th>"; });
+    h += "</tr></thead><tbody>";
+    q.items.forEach(function(it,ii){
+      h += '<tr data-row="'+ii+'"><td class="itxt">'+it+
+           '<div class="manch"><span>1 = '+lo+'</span><span>7 = '+hi+'</span></div></td>';
+      for(var v=1; v<=7; v++)
+        h += '<td data-n="'+v+'"><input type="radio" name="'+q.id+"_"+(ii+1)+'" value="'+v+'"></td>';
+      h += "</tr>";
+    });
+    h += "</tbody></table>";
+  } else {
+    var cls = q.options.length<=4 && q.options.join("").length<40 ? "opts horiz" : "opts";
+    h += '<ul class="'+cls+'">';
+    q.options.forEach(function(o,i){
+      h += "<li><label><input type='radio' name='"+q.id+"' value='"+(i+1)+"'><span>"+o+"</span></label></li>";
+    });
+    h += "</ul>";
+  }
+  return h;
+}
+
+function render(){
+  var p = S.pages[S.idx];
+  var h = "";
+  if(p.t === "html") h = p.html;
+  else h = renderQuestion(p.q, p.optional, p.intro);
+  h += '<nav><span class="warn" id="warn">Please answer every item before continuing.</span>'+
+       '<button id="next">'+(S.idx===S.pages.length-1?"Submit":"Continue")+"</button></nav>";
+  card.innerHTML = h;
+  window.scrollTo(0,0);
+  pageEnter = Date.now();
+
+  /* restore answers */
+  if(p.t === "q"){
+    var q = p.q;
+    if(q.type === "bipolar"){
+      q.rows.forEach(function(_,ii){
+        var v = S.answers[q.id+"_"+(ii+1)];
+        if(v){ var el = card.querySelector("input[name='"+q.id+"_"+(ii+1)+"'][value='"+v+"']"); if(el) el.checked = true; }
+      });
+    } else if(q.type === "grid"){
+      q.items.forEach(function(_,ii){
+        var v = S.answers[q.id+"_"+(ii+1)];
+        if(v){ var el = card.querySelector("input[name='"+q.id+"_"+(ii+1)+"'][value='"+v+"']"); if(el) el.checked = true; }
+      });
+    } else {
+      var v = S.answers[q.id];
+      if(v){ var el = card.querySelector("input[name='"+q.id+"'][value='"+v+"']"); if(el) el.checked = true; }
+    }
+  }
+  document.getElementById("next").onclick = next;
+  document.getElementById("barfill").style.width = (100*S.idx/S.pages.length)+"%";
+}
+
+function collect(){
+  var p = S.pages[S.idx];
+  if(p.t !== "q") return true;
+  var q = p.q, ok = true;
+  card.querySelectorAll(".miss").forEach(function(r){ r.classList.remove("miss"); });
+  if(q.type === "bipolar"){
+    q.rows.forEach(function(_,ii){
+      var el = card.querySelector("input[name='"+q.id+"_"+(ii+1)+"']:checked");
+      if(el) S.answers[q.id+"_"+(ii+1)] = +el.value;
+      else if(!p.optional){ ok = false;
+        var row = card.querySelector(".bip-row[data-row='"+ii+"']"); if(row) row.classList.add("miss"); }
+    });
+  } else if(q.type === "grid"){
+    q.items.forEach(function(_,ii){
+      var el = card.querySelector("input[name='"+q.id+"_"+(ii+1)+"']:checked");
+      if(el) S.answers[q.id+"_"+(ii+1)] = +el.value;
+      else if(!p.optional){ ok = false; var row = card.querySelector("tr[data-row='"+ii+"']"); if(row) row.classList.add("miss"); }
+    });
+  } else {
+    var el = card.querySelector("input[name='"+q.id+"']:checked");
+    if(el) S.answers[q.id] = +el.value;
+    else if(!p.optional) ok = false;
+  }
+  return ok;
+}
+
+function next(){
+  if(!collect()){ document.getElementById("warn").classList.add("on"); return; }
+  var p = S.pages[S.idx];
+  var key = p.t==="q" ? p.q.id : "pg"+S.idx;
+  S.times[key] = Math.round((Date.now()-pageEnter)/1000);
+  S.idx++;
+  save();
+  flush(false).catch(function(){});   /* fire-and-forget; retries internally */
+  if(S.idx >= S.pages.length) return finish();
+  render();
+}
+
+function finish(){
+  card.innerHTML = '<div class="center"><h1>Submitting your responses…</h1>'+
+                   '<p class="note">Please do not close this window.</p></div>';
+  S.meta.finished_at = new Date().toISOString();
+  flush(true, "complete").then(function(){
+    localStorage.removeItem(LS);
+    if(CONFIG.COMPLETION_URL.indexOf("http") === 0){ location.href = CONFIG.COMPLETION_URL; return; }
+    card.innerHTML = '<div class="center"><h1>Thank you.</h1>'+
+      '<p>Your responses have been recorded. You may close this window.</p></div>';
+  }).catch(function(){
+    beacon(flushPayload(true, "complete"));
+    card.innerHTML = '<div class="center"><h1>We could not reach the server.</h1>'+
+      '<p>Your answers are safely stored in this browser and were not lost. '+
+      'Please check your internet connection and press the button below.</p>'+
+      '<p><button id="retry">Try again</button></p>'+
+      '<p class="note">If this keeps failing, please message the researcher on Prolific '+
+      'and include this reference code:<br><strong>'+S.token+'</strong><br>'+
+      'Do not close this tab until you have copied the code.</p></div>';
+    document.getElementById("retry").onclick = finish;
+  });
+}
+
+/* if the participant closes the tab mid-way, push what we have */
+window.addEventListener("pagehide", function(){
+  if(S.token && S.pages && S.idx < S.pages.length) beacon(flushPayload(false, "partial"));
+});
+
+/* ---------- opening pages ---------- */
+/* Two distinct endings.
+   no_consent  -> Prolific forbids rejecting anyone for declining consent, so no
+                  completion code is issued; the participant is asked to return
+                  the submission instead.
+   screened out -> paid the fixed screen-out reward via its own completion code. */
+function endNoConsent(){
+  S.meta.screened_out = "no_consent";
+  S.meta.finished_at = new Date().toISOString();
+  flush(true, "no_consent").catch(function(){ beacon(flushPayload(true, "no_consent")); });
+  localStorage.removeItem(LS);
+  card.innerHTML =
+    '<div class="center">'+
+    '<h1>You have chosen not to take part.</h1>'+
+    '<p>Because you did not give consent, the study ends here. '+
+    'No responses have been collected from you.</p>'+
+    '<p><strong>Please go back to Prolific and return your submission.</strong><br>'+
+    'Returning a submission does not count against your record.</p>'+
+    '<p class="note">Thank you for your time.</p></div>';
+}
+
+function endScreenedOut(reason){
+  S.meta.screened_out = reason;
+  S.meta.finished_at = new Date().toISOString();
+  var go = function(){
+    if(CONFIG.SCREENOUT_URL.indexOf("http") === 0) location.href = CONFIG.SCREENOUT_URL;
+  };
+  card.innerHTML =
+    '<div class="center">'+
+    '<h1>Thank you for your interest.</h1>'+
+    '<p>Based on your answers, you are not eligible to take part in this study.</p>'+
+    '<p>You will be returned to Prolific in a moment and paid for your time. '+
+    'If you are not redirected automatically, '+
+    '<a href="'+CONFIG.SCREENOUT_URL+'">please click here</a>.</p></div>';
+  localStorage.removeItem(LS);
+  flush(true, reason).then(go).catch(function(){
+    beacon(flushPayload(true, reason));
+    setTimeout(go, 1500);
+  });
+}
+
+function pageConsent(){
+  card.innerHTML = CONSENT_HTML +
+    "<ul class='opts'>"+
+    "<li><label><input type='radio' name='CONSENT' value='1'><span>I consent, begin the survey.</span></label></li>"+
+    "<li><label><input type='radio' name='CONSENT' value='2'><span>I do not consent. I do not wish to participate.</span></label></li>"+
+    "</ul><nav><span class='warn' id='warn'>Please select one option.</span>"+
+    "<button id='next'>Continue</button></nav>";
+  window.scrollTo(0,0);
+  document.getElementById("next").onclick = function(){
+    var el = card.querySelector("input[name='CONSENT']:checked");
+    if(!el){ document.getElementById("warn").classList.add("on"); return; }
+    S.answers.CONSENT = +el.value;
+    S.meta.reached = "consent";
+    flush(false).catch(function(){});
+    if(+el.value === 2) return endNoConsent();
+    pageScreen();
+  };
+}
+
+function pageScreen(){
+  var age = {id:"SCR_AGE", type:"radio", stem:"What is your age?",
+    options:["Under 19 years old","19-29","30-39","40-49","50-59","60+"]};
+  var frq = {id:"SCR_FREQ", type:"radio",
+    stem:"How many times have you booked a restaurant through a mobile application "+
+         "(e.g., Yelp, OpenTable, Google Maps) during the past 6 months?",
+    options:["Never","1-2 times","3-5 times","6-9 times","10 or more"]};
+  card.innerHTML = renderQuestion(age) + "<hr>" + renderQuestion(frq) +
+    "<nav><span class='warn' id='warn'>Please answer both questions.</span>"+
+    "<button id='next'>Continue</button></nav>";
+  window.scrollTo(0,0);
+  document.getElementById("next").onclick = function(){
+    var a = card.querySelector("input[name='SCR_AGE']:checked");
+    var f = card.querySelector("input[name='SCR_FREQ']:checked");
+    if(!a || !f){ document.getElementById("warn").classList.add("on"); return; }
+    S.answers.SCR_AGE = +a.value; S.answers.SCR_FREQ = +f.value;
+    S.meta.reached = "screening";
+    /* Screening also runs on Prolific. These branches are the second line of
+       defence for anyone who gets through the prescreen. */
+    if(+a.value === 1){ flush(false).catch(function(){}); return endScreenedOut("under19"); }
+    if(+f.value === 1){ flush(false).catch(function(){}); return endScreenedOut("never_booked"); }
+    startAssign();
+  };
+}
+
+function startAssign(){
+  card.innerHTML = '<div class="center"><p class="note">Preparing your session&hellip;</p></div>';
+  post({action:"assign", cid:S.token, pid:S.meta.pid, study_id:S.meta.study_id,
+        session_id:S.meta.session_id, ua:navigator.userAgent})
+  .then(function(r){
+    if(r && r.duplicate){
+      S.meta.screened_out = "duplicate";
+      flush(true, "duplicate").catch(function(){});
+      localStorage.removeItem(LS);
+      card.innerHTML = '<div class="center"><h1>You have already completed this study.</h1>'+
+        '<p>Our records show a completed response from this Prolific account. '+
+        'Please return your submission on Prolific.</p></div>';
+      return;
+    }
+    if(!r || !r.ok) throw new Error("assign failed");
+    S.assignment = r.assignment; S.meta.assign_source = "server";
+    S.pages = buildPages(S.assignment); S.idx = 0; S.meta.reached = "assigned";
+    save(); flush(false).catch(function(){}); render();
+  })
+  .catch(function(){
+    /* server unreachable: assign locally so a paid participant is never turned away */
+    S.assignment = localAssign(); S.meta.assign_source = "local_fallback";
+    S.pages = buildPages(S.assignment); S.idx = 0; S.meta.reached = "assigned";
+    save(); render();
+  });
+}
+
+function localAssign(){
+  var pick = function(a){ return a[Math.floor(Math.random()*a.length)]; };
+  return {order: pick(PART_ORDERS).join(""), p1: pick(P1_CONDS),
+          p2pair: pick(P2_PAIRS).join("+"), p2order: pick(["AB","BA"]),
+          p3pair: pick(P3_PAIRS).join("+"), p3order: pick(["AB","BA"])};
+}
+
+/* ---------- boot ---------- */
+if(load() && S.pages){
+  render();
+} else {
+  if(!S.token) S.token = newId();
+  S.meta.reached = "opened";
+  save();
+  /* sendBeacon is queued by the browser and survives the tab being closed a
+     moment later, so even an instant bounce is recorded. The normal POST runs
+     as well; duplicate rows are harmless because the rebuild merges by id. */
+  beacon(flushPayload(false, "opened"));
+  flush(false).catch(function(){});
+  pageConsent();
+}
+</script>
+</body>
+</html>
