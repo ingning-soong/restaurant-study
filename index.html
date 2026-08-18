@@ -64,7 +64,9 @@ ul.opts label{display:flex;gap:12px;align-items:flex-start;padding:13px 4px;curs
 ul.opts.horiz{display:flex;gap:10px;flex-wrap:wrap}
 ul.opts.horiz li{border:1px solid var(--line);border-radius:8px}
 ul.opts.horiz label{padding:10px 14px}
-nav{margin-top:26px;display:flex;justify-content:flex-end;align-items:center;gap:16px}
+nav{margin-top:26px;display:flex;justify-content:flex-end;align-items:center;gap:10px}
+button.ghost{background:transparent;color:var(--mut);border:1px solid var(--line);padding:12px 22px}
+button.ghost:hover{background:#f2f4f7;filter:none}
 button{background:var(--accent);color:#fff;border:0;border-radius:8px;padding:12px 30px;
  font-size:16px;cursor:pointer}
 button:hover{filter:brightness(1.08)}
@@ -158,6 +160,12 @@ function postOnce(payload){
   }).then(function(r){
     if(!r.ok) throw new Error("http "+r.status);
     return r.json();
+  }).then(function(j){
+    /* The server answers HTTP 200 even when it is too busy to hand out a
+       condition. Without this, a burst of simultaneous starts would fall
+       straight through to local assignment and unbalance the design. */
+    if(j && j.ok === false && j.retry) throw new Error("busy");
+    return j;
   });
 }
 
@@ -195,8 +203,7 @@ function flush(complete, status){
   Object.keys(S.times).forEach(function(k){ d["t_"+k]=S.times[k]; });
   if(S.assignment){
     d.order=S.assignment.order; d.p1_cond=S.assignment.p1;
-    d.p2_pair=S.assignment.p2pair; d.p2_order=S.assignment.p2order;
-    d.p3_pair=S.assignment.p3pair; d.p3_order=S.assignment.p3order;
+    d.p2_cond=S.assignment.p2; d.p3_cond=S.assignment.p3;
   }
   S.seq = (S.seq || 0) + 1;
   var payload = {action: complete?"complete":"save", token:S.token,
@@ -212,19 +219,13 @@ function flushPayload(complete, status){
   Object.keys(S.times).forEach(function(k){ d["t_"+k]=S.times[k]; });
   if(S.assignment){
     d.order=S.assignment.order; d.p1_cond=S.assignment.p1;
-    d.p2_pair=S.assignment.p2pair; d.p2_order=S.assignment.p2order;
-    d.p3_pair=S.assignment.p3pair; d.p3_order=S.assignment.p3order;
+    d.p2_cond=S.assignment.p2; d.p3_cond=S.assignment.p3;
   }
   return {action: complete?"complete":"save", token:S.token,
           status:status, seq:(S.seq||0)+1, data:d};
 }
 
 /* ---------- page construction ---------- */
-function splitPair(p, ord){
-  var a = p.split("+");
-  return ord === "BA" ? [a[1],a[0]] : [a[0],a[1]];
-}
-
 function buildPages(A){
   var pg = [];
   /* item 11: the manipulation checks are asked while Stage 1 is still true,
@@ -239,22 +240,20 @@ function buildPages(A){
   };
   /* item 15: scenario -> occasion -> booking bridge -> remaining measures */
   var partP2 = function(){
-    splitPair(A.p2pair, A.p2order).forEach(function(c){
-      pg.push({t:"html", html:RESET+INSTR+'<p class="scenario">'+P2_TEXT[c]+"</p>"});
-      pg.push({t:"q", q:p2OccasionQuestion(c)});
-      pg.push({t:"html", html:P2_BRIDGE_HTML});
-      p2AfterBridgeQuestions(c).forEach(function(q){ pg.push({t:"q", q:q}); });
-    });
+    var c = A.p2;
+    pg.push({t:"html", html:RESET+INSTR+'<p class="scenario">'+P2_TEXT[c]+"</p>"});
+    pg.push({t:"q", q:p2OccasionQuestion(c)});
+    pg.push({t:"html", html:P2_BRIDGE_HTML});
+    p2AfterBridgeQuestions(c).forEach(function(q){ pg.push({t:"q", q:q}); });
   };
   /* item 17: lead-in line, spacing, manipulation text in bold */
   var partP3 = function(){
-    splitPair(A.p3pair, A.p3order).forEach(function(c){
-      pg.push({t:"html", html:RESET+INSTR+P3_LEAD+P3_LEADIN+
-                (P3_TEXT[c].plain
-                  ? '<p class="scenario">'+P3_TEXT[c].plain+" <strong>"+P3_TEXT[c].bold+"</strong></p>"
-                  : '<p class="manip">'+P3_TEXT[c].bold+"</p>")});
-      p3Questions(c).forEach(function(q){ pg.push({t:"q", q:q}); });
-    });
+    var c = A.p3;
+    pg.push({t:"html", html:RESET+INSTR+P3_LEAD+P3_LEADIN+
+              (P3_TEXT[c].plain
+                ? '<p class="scenario">'+P3_TEXT[c].plain+" <strong>"+P3_TEXT[c].bold+"</strong></p>"
+                : '<p class="manip">'+P3_TEXT[c].bold+"</p>")});
+    p3Questions(c).forEach(function(q){ pg.push({t:"q", q:q}); });
   };
   var map = {P1:partP1, P2:partP2, P3:partP3};
   A.order.match(/P[123]/g).forEach(function(p){ map[p](); });
@@ -323,6 +322,7 @@ function render(){
   if(p.t === "html") h = p.html;
   else h = renderQuestion(p.q, p.optional, p.intro);
   h += '<nav><span class="warn" id="warn">Please answer every item before continuing.</span>'+
+       (S.idx>0 ? '<button id="back" class="ghost">Back</button>' : '')+
        '<button id="next">'+(S.idx===S.pages.length-1?"Submit":"Continue")+"</button></nav>";
   card.innerHTML = h;
   window.scrollTo(0,0);
@@ -347,10 +347,12 @@ function render(){
     }
   }
   document.getElementById("next").onclick = next;
+  var bk = document.getElementById("back");
+  if(bk) bk.onclick = back;
   document.getElementById("barfill").style.width = (100*S.idx/S.pages.length)+"%";
 }
 
-function collect(){
+function collect(lenient){
   var p = S.pages[S.idx];
   if(p.t !== "q") return true;
   var q = p.q, ok = true;
@@ -359,28 +361,43 @@ function collect(){
     q.rows.forEach(function(_,ii){
       var el = card.querySelector("input[name='"+q.id+"_"+(ii+1)+"']:checked");
       if(el) S.answers[q.id+"_"+(ii+1)] = +el.value;
-      else if(!p.optional){ ok = false;
+      else if(!p.optional && !lenient){ ok = false;
         var row = card.querySelector(".bip-row[data-row='"+ii+"']"); if(row) row.classList.add("miss"); }
     });
   } else if(q.type === "grid"){
     q.items.forEach(function(_,ii){
       var el = card.querySelector("input[name='"+q.id+"_"+(ii+1)+"']:checked");
       if(el) S.answers[q.id+"_"+(ii+1)] = +el.value;
-      else if(!p.optional){ ok = false; var row = card.querySelector("tr[data-row='"+ii+"']"); if(row) row.classList.add("miss"); }
+      else if(!p.optional && !lenient){ ok = false; var row = card.querySelector("tr[data-row='"+ii+"']"); if(row) row.classList.add("miss"); }
     });
   } else {
     var el = card.querySelector("input[name='"+q.id+"']:checked");
     if(el) S.answers[q.id] = +el.value;
-    else if(!p.optional) ok = false;
+    else if(!p.optional && !lenient) ok = false;
   }
   return ok;
 }
 
-function next(){
-  if(!collect()){ document.getElementById("warn").classList.add("on"); return; }
+function stamp(){
   var p = S.pages[S.idx];
   var key = p.t==="q" ? p.q.id : "pg"+S.idx;
-  S.times[key] = Math.round((Date.now()-pageEnter)/1000);
+  /* accumulated, not overwritten, so re-reading a scenario adds to its time */
+  S.times[key] = (S.times[key]||0) + Math.round((Date.now()-pageEnter)/1000);
+}
+
+/* Participants asked to be able to look at the scenario again. Going back
+   keeps whatever was already selected; nothing is cleared. */
+function back(){
+  collect(true);                 /* keep answers, but do not require them */
+  stamp();
+  if(S.idx > 0) S.idx--;
+  save();
+  render();
+}
+
+function next(){
+  if(!collect()){ document.getElementById("warn").classList.add("on"); return; }
+  stamp();
   S.idx++;
   save();
   flush(false).catch(function(){});   /* fire-and-forget; retries internally */
@@ -501,9 +518,12 @@ function pageScreen(){
 }
 
 function startAssign(){
-  card.innerHTML = '<div class="center"><p class="note">Preparing your session&hellip;</p></div>';
+  card.innerHTML = '<div class="center"><p class="note">Preparing your session&hellip;</p>'+
+    '<p class="note">This can take a few seconds when many people start at once. '+
+    'Please do not close or reload this page.</p></div>';
   post({action:"assign", cid:S.token, pid:S.meta.pid, study_id:S.meta.study_id,
-        session_id:S.meta.session_id, ua:navigator.userAgent})
+        session_id:S.meta.session_id, ua:navigator.userAgent},
+       7, [800, 2000, 4000, 8000, 12000, 18000, 25000])
   .then(function(r){
     if(r && r.duplicate){
       S.meta.screened_out = "duplicate";
@@ -530,8 +550,7 @@ function startAssign(){
 function localAssign(){
   var pick = function(a){ return a[Math.floor(Math.random()*a.length)]; };
   return {order: pick(PART_ORDERS).join(""), p1: pick(P1_CONDS),
-          p2pair: pick(P2_PAIRS).join("+"), p2order: pick(["AB","BA"]),
-          p3pair: pick(P3_PAIRS).join("+"), p3order: pick(["AB","BA"])};
+          p2: pick(P2_CONDS), p3: pick(P3_CONDS)};
 }
 
 /* ---------- boot ---------- */

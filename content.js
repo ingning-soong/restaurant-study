@@ -24,7 +24,7 @@ const CONSENT_HTML = `
 evaluate how consumers perceive information presented in a restaurant related mobile app.
 If you volunteer to participate, you will view app information and several short scenarios, and
 then complete a survey in which you make ratings based on the information provided. The survey
-will take about 20 to 25 minutes of your time. There will not be direct benefits to you as a
+will take about 4 to 10 minutes of your time. There will not be direct benefits to you as a
 participant in this study. This study includes only minimal risks although there are risks
 involved in all research studies. You may feel uncomfortable when answering some of the
 questions. You may discontinue participation at any time. There will not be a financial cost to
@@ -42,7 +42,9 @@ continue with the survey. If you do not wish to participate, please decline by s
 able to ask questions about the research study. I am an adult over 19 years old.</strong></p>`;
 
 /* ============================ PRETEST 1 ============================ */
-const P1_CONDS = ["SELF", "AIT", "AI4"];
+/* AI conditions now form a 1 -> 2 -> 4 gradient in list size, so the
+   manipulation check has a middle point to separate them. */
+const P1_CONDS = ["SELF", "AIT", "AI2", "AI4"];
 
 const P1_INTRO_HTML = INSTR +
   '<p class="scenario">It is a regular Tuesday. Nothing in particular is happening today. You ' +
@@ -62,6 +64,10 @@ const P1_STIM = {
         'at is one <strong>the app</strong> put together, from what you would like based on your ' +
         'past preferences.</p>' +
         '<img class="stim" src="img/P1_cond2_AITopPick.png" alt="AI recommendation screen">',
+  AI2:  '<p class="scenario">You tap the AI recommendation banner. The list you end up looking ' +
+        'at is one <strong>the app</strong> put together, from what you would like based on your ' +
+        'past preferences.</p>' +
+        '<img class="stim" src="img/P1_cond4_AI2.png" alt="AI recommendation screen">',
   AI4:  '<p class="scenario">You tap the AI recommendation banner. The list you end up looking ' +
         'at is one <strong>the app</strong> put together, from what you would like based on your ' +
         'past preferences.</p>' +
@@ -203,13 +209,9 @@ const CHECK_QUESTION = {
 };
 
 /* ============================ design ============================ */
-function pairsOf(arr) {
-  const out = [];
-  for (let i = 0; i < arr.length; i++)
-    for (let j = i + 1; j < arr.length; j++) out.push([arr[i], arr[j]]);
-  return out;
-}
-const P2_PAIRS = pairsOf(P2_CONDS);   // 15
-const P3_PAIRS = pairsOf(P3_CONDS);   // 15
-const PART_ORDERS = [["P1","P2","P3"],["P1","P3","P2"],["P2","P1","P3"],
-                     ["P2","P3","P1"],["P3","P1","P2"],["P3","P2","P1"]];
+/* One condition per part (2026-08-17). Reading several similar dinner
+   scenarios in a row produced fatigue and within-participant comparison;
+   between-subjects on every part removes both and takes 6-7 minutes. */
+/* P1 is always presented first (2026-08-18). P1 carries the app screen that
+   establishes the setting; P2 and P3 are then shuffled between themselves. */
+const PART_ORDERS = [["P1","P2","P3"],["P1","P3","P2"]];
