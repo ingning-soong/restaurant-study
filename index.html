@@ -102,8 +102,8 @@ button:hover{filter:brightness(1.08)}
    Fill these three in before launching.                    */
 var CONFIG = {
   ENDPOINT:      "https://script.google.com/macros/s/AKfycbxRWiWI5xYVdCnX_U4G8J3oEWzRY_hJ813QWScKwHGM2x6zFIBV3lgBLSda5JsQjkkW/exec",
-  COMPLETION_URL:"PASTE_PROLIFIC_COMPLETION_URL_HERE",
-  SCREENOUT_URL: "PASTE_PROLIFIC_SCREENOUT_URL_HERE"
+  COMPLETION_URL:"https://app.prolific.com/submissions/complete?cc=C1Q4RLSC",
+  SCREENOUT_URL: "https://app.prolific.com/submissions/complete?cc=CTDKPL7S"
 };
 /* ======================================================= */
 
@@ -496,8 +496,8 @@ function pageScreen(){
   var age = {id:"SCR_AGE", type:"radio", stem:"What is your age?",
     options:["Under 18 years old","18-29","30-39","40-49","50-59","60+"]};
   var frq = {id:"SCR_FREQ", type:"radio",
-    stem:"How many times have you booked a restaurant through a mobile application "+
-         "(e.g., Yelp, OpenTable, Google Maps) during the past 6 months?",
+    stem:"How many times have you used a mobile application (e.g., Yelp, OpenTable, "+
+         "Google Maps) to find or book a restaurant during the past 6 months?",
     options:["Never","1-2 times","3-5 times","6-9 times","10 or more"]};
   card.innerHTML = renderQuestion(age) + "<hr>" + renderQuestion(frq) +
     "<nav><span class='warn' id='warn'>Please answer both questions.</span>"+
