@@ -39,7 +39,7 @@ After the storage time, the information gathered will be completely discarded.</
 continue with the survey. If you do not wish to participate, please decline by selecting
 &ldquo;I do not consent.&rdquo;</p>
 <p><strong>I have read the above information and agree to participate in this study. I have been
-able to ask questions about the research study. I am an adult over 19 years old.</strong></p>`;
+able to ask questions about the research study. I am an adult over 18 years old.</strong></p>`;
 
 /* ============================ PRETEST 1 ============================ */
 /* AI conditions now form a 1 -> 2 -> 4 gradient in list size, so the

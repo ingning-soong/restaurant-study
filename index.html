@@ -494,7 +494,7 @@ function pageConsent(){
 
 function pageScreen(){
   var age = {id:"SCR_AGE", type:"radio", stem:"What is your age?",
-    options:["Under 19 years old","19-29","30-39","40-49","50-59","60+"]};
+    options:["Under 18 years old","18-29","30-39","40-49","50-59","60+"]};
   var frq = {id:"SCR_FREQ", type:"radio",
     stem:"How many times have you booked a restaurant through a mobile application "+
          "(e.g., Yelp, OpenTable, Google Maps) during the past 6 months?",
@@ -511,7 +511,7 @@ function pageScreen(){
     S.meta.reached = "screening";
     /* Screening also runs on Prolific. These branches are the second line of
        defence for anyone who gets through the prescreen. */
-    if(+a.value === 1){ flush(false).catch(function(){}); return endScreenedOut("under19"); }
+    if(+a.value === 1){ flush(false).catch(function(){}); return endScreenedOut("under18"); }
     if(+f.value === 1){ flush(false).catch(function(){}); return endScreenedOut("never_booked"); }
     startAssign();
   };
