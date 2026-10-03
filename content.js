@@ -24,7 +24,7 @@ const CONSENT_HTML = `
 evaluate how consumers perceive information presented in a restaurant related mobile app.
 If you volunteer to participate, you will view app information and several short scenarios, and
 then complete a survey in which you make ratings based on the information provided. The survey
-will take about 4 to 10 minutes of your time. There will not be direct benefits to you as a
+will take about 7 minutes of your time. There will not be direct benefits to you as a
 participant in this study. This study includes only minimal risks although there are risks
 involved in all research studies. You may feel uncomfortable when answering some of the
 questions. You may discontinue participation at any time. There will not be a financial cost to
